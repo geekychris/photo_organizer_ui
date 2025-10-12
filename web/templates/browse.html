@@ -1,0 +1,1251 @@
+{{define "title"}}Browse Photos - Photo Database{{end}}
+
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <h1>Browse Photos</h1>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="mb-0">Filters & Search</h5>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="viewMode" id="thumbnails" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="thumbnails">
+                                <i class="bi bi-grid"></i> Thumbnails
+                            </label>
+                            <input type="radio" class="btn-check" name="viewMode" id="details" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="details">
+                                <i class="bi bi-list"></i> Details
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form id="filterForm" class="row g-3">
+                    <div class="col-md-2">
+                        <label for="viewType" class="form-label">View Type</label>
+                        <select class="form-select" id="viewType">
+                            <option value="flat">All Photos</option>
+                            <option value="directory">By Directory</option>
+                            <option value="date">By Date</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="orderBy" class="form-label">Sort by</label>
+                        <select class="form-select" id="orderBy">
+                            <option value="path">Directory Path</option>
+                            <option value="date">File Date</option>
+                            <option value="exif_date">EXIF Date</option>
+                            <option value="name">File Name</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="dateFrom" class="form-label">Date From</label>
+                        <input type="date" class="form-control" id="dateFrom">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="dateTo" class="form-label">Date To</label>
+                        <input type="date" class="form-control" id="dateTo">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" placeholder="Filename...">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="btn-group" role="group" style="width: 100%;">
+                            <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="clearFilters()">Clear</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced filters (initially hidden) -->
+                    <div class="col-12">
+                        <div class="collapse" id="advancedFilters">
+                            <hr>
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label for="year" class="form-label">Year</label>
+                                    <input type="number" class="form-control" id="year" placeholder="2024" min="1990" max="2030">
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="month" class="form-label">Month</label>
+                                    <input type="number" class="form-control" id="month" placeholder="12" min="1" max="12">
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="day" class="form-label">Day</label>
+                                    <input type="number" class="form-control" id="day" placeholder="25" min="1" max="31">
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-link btn-sm p-0 mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters" aria-expanded="false">
+                            <i class="bi bi-chevron-down"></i> Advanced Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Tree sidebar (initially hidden) -->
+    <div class="col-md-3" id="tree-sidebar" style="display: none;">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0" id="tree-title">Directory Tree</h6>
+                <button class="btn btn-sm btn-outline-secondary" id="expand-all" title="Expand All">
+                    <i class="bi bi-plus-square"></i>
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div id="tree-container" style="max-height: 600px; overflow-y: auto; padding: 10px;">
+                    <!-- Trees will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main content area -->
+    <div class="col" id="main-content">
+        <div id="loading" class="text-center d-none">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        
+        <!-- Breadcrumb navigation -->
+        <nav aria-label="breadcrumb" id="breadcrumb-nav" style="display: none;">
+            <ol class="breadcrumb">
+                <!-- Breadcrumbs will be populated here -->
+            </ol>
+        </nav>
+        
+        <div id="photos-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-4 row-cols-xl-6 g-3">
+            <!-- Photos will be loaded here -->
+        </div>
+        
+        <!-- Directory groups container -->
+        <div id="directory-groups-container" style="display: none;">
+            <!-- Directory-grouped photos will be loaded here -->
+        </div>
+        
+    </div>
+</div>
+
+<!-- Photo Modal -->
+<div class="modal fade" id="photoModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="photoModalTitle">Photo Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="position-relative">
+                            <!-- Loading indicator -->
+                            <div id="photoModalLoading" class="d-flex align-items-center justify-content-center" style="height: 400px; display: none !important;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading image...</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Main image -->
+                            <div id="photoModalImageContainer" class="text-center">
+                                <img id="photoModalImage" src="" alt="" class="img-fluid rounded cursor-pointer" 
+                                     style="max-height: 70vh; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" 
+                                     title="Click to view original size"
+                                     onerror="handleImageError(this)">
+                                <!-- Error fallback -->
+                                <div id="photoModalImageError" class="d-flex align-items-center justify-content-center text-muted" 
+                                     style="height: 400px; display: none !important;">
+                                    <div class="text-center">
+                                        <i class="bi bi-image fs-1 mb-2"></i>
+                                        <p>Image could not be loaded</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Click hint -->
+                            <div class="text-center mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-cursor-fill me-1"></i>
+                                    Click image to view original size
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="d-flex flex-column h-100">
+                            <div class="mb-3">
+                                <button id="viewOriginalBtn" class="btn btn-primary btn-sm me-2" title="View original image">
+                                    <i class="bi bi-arrows-fullscreen me-1"></i>View Original
+                                </button>
+                                <button id="downloadBtn" class="btn btn-outline-secondary btn-sm" title="Download image">
+                                    <i class="bi bi-download me-1"></i>Download
+                                </button>
+                            </div>
+                            
+                            <div id="photoModalDetails" class="flex-grow-1">
+                                <!-- Photo details will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+let currentOffset = 0;
+let hasMore = true;
+let loading = false;
+let currentFilters = {};
+let currentViewType = 'flat';
+let directoryTree = null;
+let dateTree = null;
+let expandedNodes = new Set(); // Track expanded tree nodes
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadPhotos();
+    loadTrees();
+    
+    document.getElementById('filterForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        applyFilters();
+    });
+    
+    // View type change handler
+    document.getElementById('viewType').addEventListener('change', function() {
+        currentViewType = this.value;
+        toggleTreeView();
+        applyFilters();
+    });
+    
+    // Expand/collapse all button
+    document.getElementById('expand-all').addEventListener('click', function() {
+        toggleAllNodes();
+    });
+    
+    // Auto-load more photos when scrolling near bottom
+    window.addEventListener('scroll', function() {
+        // Only apply infinite scroll for flat view
+        if (currentViewType === 'flat') {
+            const scrollHeight = document.documentElement.scrollHeight;
+            const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+            const clientHeight = document.documentElement.clientHeight;
+            
+            // Load more when within 1000px of bottom
+            if (scrollTop + clientHeight >= scrollHeight - 1000) {
+                if (hasMore && !loading) {
+                    loadPhotos(true);
+                }
+            }
+        }
+    });
+    
+    // View mode toggle functionality
+    document.querySelectorAll('input[name="viewMode"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            const container = document.getElementById('photos-container');
+            if (this.id === 'thumbnails') {
+                container.className = 'row row-cols-1 row-cols-md-2 row-cols-lg-4 row-cols-xl-6 g-3';
+            } else {
+                container.className = 'list-group';
+            }
+            refreshView();
+        });
+    });
+    
+    // View mode toggle
+    document.querySelectorAll('input[name="viewMode"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            const container = document.getElementById('photos-container');
+            if (this.id === 'thumbnails') {
+                container.className = 'row row-cols-1 row-cols-md-2 row-cols-lg-4 row-cols-xl-6 g-3';
+            } else {
+                container.className = 'list-group';
+            }
+            refreshView();
+        });
+    });
+});
+
+
+function createThumbnailCard(file) {
+    const col = document.createElement('div');
+    col.className = 'col';
+    
+    const displayDate = file.exif_date_time ? new Date(file.exif_date_time).toLocaleDateString() : 
+                       new Date(file.modified_at).toLocaleDateString();
+    
+    col.innerHTML = `
+        <div class="card h-100 photo-card" data-file-id="${file.id}">
+            <div class="photo-thumbnail position-relative" style="height: 200px; overflow: hidden; border-radius: 0.375rem 0.375rem 0 0;">
+                <img src="/thumbnail/${file.id}" alt="${file.filename}" 
+                     class="w-100 h-100" style="object-fit: cover;" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="d-flex align-items-center justify-content-center h-100 text-muted bg-light position-absolute top-0 start-0 w-100" style="display: none !important;">
+                    <i class="bi bi-image fs-1"></i>
+                </div>
+            </div>
+            <div class="card-body p-2">
+                <h6 class="card-title text-truncate" title="${file.filename}">${file.filename}</h6>
+                <p class="card-text small text-muted mb-0">${displayDate}</p>
+                ${file.exif_make ? `<p class="card-text small text-muted mb-0">${file.exif_make} ${file.exif_model}</p>` : ''}
+            </div>
+        </div>
+    `;
+    
+    col.addEventListener('click', () => showPhotoModal(file));
+    
+    return col;
+}
+
+function createDetailItem(file) {
+    const item = document.createElement('div');
+    item.className = 'list-group-item photo-item';
+    item.setAttribute('data-file-id', file.id);
+    
+    const displayDate = file.exif_date_time ? new Date(file.exif_date_time).toLocaleString() : 
+                       new Date(file.modified_at).toLocaleString();
+    
+    const fileSize = formatBytes(file.file_size);
+    
+    item.innerHTML = `
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="photo-thumbnail-small position-relative" style="width: 60px; height: 60px; overflow: hidden; border-radius: 0.25rem;">
+                    <img src="/thumbnail/${file.id}" alt="${file.filename}" 
+                         class="w-100 h-100" style="object-fit: cover;" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="d-flex align-items-center justify-content-center h-100 text-muted bg-light position-absolute top-0 start-0 w-100" style="display: none !important;">
+                        <i class="bi bi-image"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <h6 class="mb-1">${file.filename}</h6>
+                <p class="mb-1 text-muted small">${file.relative_path}</p>
+                <small class="text-muted">
+                    ${displayDate} • ${fileSize} • ${file.width}×${file.height}
+                    ${file.exif_make ? ` • ${file.exif_make} ${file.exif_model}` : ''}
+                </small>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-outline-primary" onclick="showPhotoModal(${JSON.stringify(file).replace(/"/g, '&quot;')})">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    return item;
+}
+
+let currentPhotoFile = null;
+
+function showPhotoModal(file) {
+    currentPhotoFile = file;
+    
+    // Set title
+    document.getElementById('photoModalTitle').textContent = file.filename;
+    
+    // Show loading state
+    const loading = document.getElementById('photoModalLoading');
+    const imageContainer = document.getElementById('photoModalImageContainer');
+    const errorContainer = document.getElementById('photoModalImageError');
+    const image = document.getElementById('photoModalImage');
+    
+    // Reset states
+    loading.style.display = 'flex';
+    imageContainer.style.display = 'none';
+    errorContainer.style.display = 'none';
+    
+    // Load image with fallback to thumbnail
+    image.onload = function() {
+        loading.style.display = 'none';
+        imageContainer.style.display = 'block';
+    };
+    
+    image.onerror = function() {
+        // If full image fails, try the thumbnail
+        if (this.src.includes('/image/')) {
+            console.log('Full image failed to load, falling back to thumbnail:', this.src);
+            this.src = `/thumbnail/${file.id}`;
+        } else {
+            // If thumbnail also fails, show error
+            handleImageError(this);
+        }
+    };
+    
+    // Try to load the full image first
+    image.src = `/image/${file.id}`;
+    
+    // Set up click handlers for viewing original
+    setupImageClickHandlers(file);
+    
+    const displayDate = file.exif_date_time ? new Date(file.exif_date_time).toLocaleString() : 
+                       new Date(file.modified_at).toLocaleString();
+    
+    const details = `
+        <h6><i class="bi bi-info-circle me-2"></i>File Information</h6>
+        <table class="table table-sm">
+            <tr><td><strong>Size:</strong></td><td>${formatBytes(file.file_size)}</td></tr>
+            <tr><td><strong>Dimensions:</strong></td><td>${file.width}×${file.height}</td></tr>
+            <tr><td><strong>Date:</strong></td><td>${displayDate}</td></tr>
+            <tr><td><strong>Path:</strong></td><td class="text-break small">${file.relative_path}</td></tr>
+        </table>
+        
+        ${file.exif_make ? `
+        <h6 class="mt-3"><i class="bi bi-camera me-2"></i>Camera Information</h6>
+        <table class="table table-sm">
+            <tr><td><strong>Make:</strong></td><td>${file.exif_make}</td></tr>
+            <tr><td><strong>Model:</strong></td><td>${file.exif_model}</td></tr>
+            ${file.exif_lens ? `<tr><td><strong>Lens:</strong></td><td>${file.exif_lens}</td></tr>` : ''}
+            ${file.exif_iso ? `<tr><td><strong>ISO:</strong></td><td>${file.exif_iso}</td></tr>` : ''}
+            ${file.exif_fnumber && file.exif_fnumber > 0 ? `<tr><td><strong>f-stop:</strong></td><td>f/${file.exif_fnumber}</td></tr>` : ''}
+            ${file.exif_exposure ? `<tr><td><strong>Exposure:</strong></td><td>${file.exif_exposure}</td></tr>` : ''}
+            ${file.exif_focal_length && file.exif_focal_length > 0 ? `<tr><td><strong>Focal Length:</strong></td><td>${file.exif_focal_length}mm</td></tr>` : ''}
+        </table>
+        ` : ''}
+        
+        <div class="mt-3">
+            <h6><i class="bi bi-palette me-2"></i>Actions</h6>
+            <div class="d-grid gap-2">
+                <small class="text-muted">• Click the image to view in original size</small>
+                <small class="text-muted">• Use the buttons above to view or download</small>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('photoModalDetails').innerHTML = details;
+    
+    const modal = new bootstrap.Modal(document.getElementById('photoModal'));
+    modal.show();
+}
+
+function setupImageClickHandlers(file) {
+    const image = document.getElementById('photoModalImage');
+    const viewOriginalBtn = document.getElementById('viewOriginalBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    // Remove existing event listeners
+    const newImage = image.cloneNode(true);
+    image.parentNode.replaceChild(newImage, image);
+    
+    const newViewBtn = viewOriginalBtn.cloneNode(true);
+    viewOriginalBtn.parentNode.replaceChild(newViewBtn, viewOriginalBtn);
+    
+    const newDownloadBtn = downloadBtn.cloneNode(true);
+    downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
+    
+    // Add click handler to image
+    newImage.addEventListener('click', () => {
+        openOriginalImage(file);
+    });
+    
+    // Add click handler to view original button
+    newViewBtn.addEventListener('click', () => {
+        openOriginalImage(file);
+    });
+    
+    // Add click handler to download button
+    newDownloadBtn.addEventListener('click', () => {
+        downloadImage(file);
+    });
+}
+
+function openOriginalImage(file) {
+    const originalUrl = `/image/${file.id}`;
+    window.open(originalUrl, '_blank', 'noopener,noreferrer');
+}
+
+function downloadImage(file) {
+    const link = document.createElement('a');
+    link.href = `/image/${file.id}`;
+    link.download = file.filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function handleImageError(img) {
+    const loading = document.getElementById('photoModalLoading');
+    const imageContainer = document.getElementById('photoModalImageContainer');
+    const errorContainer = document.getElementById('photoModalImageError');
+    
+    loading.style.display = 'none';
+    imageContainer.style.display = 'none';
+    errorContainer.style.display = 'flex';
+    
+    console.error('Failed to load image:', img.src);
+}
+
+function applyFilters() {
+    currentFilters = {};
+    
+    const orderBy = document.getElementById('orderBy').value;
+    if (orderBy) currentFilters.order_by = orderBy;
+    
+    // Date range filters (prioritized over individual date fields)
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    
+    if (dateFrom) currentFilters.date_from = dateFrom;
+    if (dateTo) currentFilters.date_to = dateTo;
+    
+    // Individual date fields (only if no date range specified)
+    if (!dateFrom && !dateTo) {
+        const year = document.getElementById('year').value;
+        if (year) currentFilters.year = year;
+        
+        const month = document.getElementById('month').value;
+        if (month) currentFilters.month = month;
+        
+        const day = document.getElementById('day').value;
+        if (day) currentFilters.day = day;
+    }
+    
+    const search = document.getElementById('search').value;
+    if (search) currentFilters.search = search;
+    
+    // Add group_by for directory view
+    if (currentViewType === 'directory') {
+        currentFilters.group_by = 'directory';
+    }
+    
+    loadPhotos();
+}
+
+
+function refreshView() {
+    const container = document.getElementById('photos-container');
+    const files = [...container.children].map(child => {
+        const fileId = child.getAttribute('data-file-id');
+        return fileId; // You would fetch the file data here
+    });
+    
+    // For now, just reload
+    loadPhotos();
+}
+
+function clearFilters() {
+    document.getElementById('filterForm').reset();
+    document.getElementById('orderBy').value = 'path';
+    document.getElementById('viewType').value = 'flat';
+    
+    // Reset view type
+    currentViewType = 'flat';
+    toggleTreeView();
+    
+    // Clear filters
+    currentFilters = {};
+    updateBreadcrumb('');
+    
+    // Reset tree selection
+    document.querySelectorAll('.tree-node').forEach(node => {
+        node.classList.remove('active');
+    });
+    
+    loadPhotos();
+}
+
+function loadTrees() {
+    // Load both directory and date trees
+    Promise.all([
+        fetch('/api/directories/tree').then(r => r.json()),
+        fetch('/api/dates/tree').then(r => r.json())
+    ])
+    .then(([dirTree, dateTreeData]) => {
+        directoryTree = dirTree;
+        dateTree = dateTreeData;
+        renderCurrentTree();
+    })
+    .catch(error => {
+        console.error('Error loading trees:', error);
+    });
+}
+
+function renderCurrentTree() {
+    if (currentViewType === 'directory') {
+        renderDirectoryTree();
+    } else if (currentViewType === 'date') {
+        renderDateTree();
+    }
+}
+
+function renderDirectoryTree() {
+    const container = document.getElementById('tree-container');
+    const title = document.getElementById('tree-title');
+    
+    title.textContent = 'Directory Tree';
+    container.innerHTML = '';
+    container.className = 'directory-tree';
+    
+    // Add "All Directories" option
+    const allItem = createTreeNode({
+        id: 'all-dirs',
+        label: 'All Directories',
+        icon: 'bi-folder-fill',
+        isRoot: true
+    });
+    allItem.addEventListener('click', () => selectFilter('directory', ''));
+    container.appendChild(allItem);
+    
+    // Render directory nodes
+    if (directoryTree && directoryTree.length > 0) {
+        directoryTree.forEach(node => {
+            const treeNode = renderDirectoryNode(node);
+            container.appendChild(treeNode);
+        });
+    }
+}
+
+function renderDirectoryNode(node) {
+    const nodeId = `dir-${node.path.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const hasChildren = node.children && node.children.length > 0;
+    
+    const nodeElement = createTreeNode({
+        id: nodeId,
+        label: node.name,
+        count: node.file_count,
+        icon: 'bi-folder',
+        hasChildren: hasChildren,
+        isExpanded: expandedNodes.has(nodeId)
+    });
+    
+    // Add click handler for selection
+    nodeElement.querySelector('.tree-label').addEventListener('click', () => {
+        selectFilter('directory', node.path);
+    });
+    
+    // Add children if they exist
+    if (hasChildren) {
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = `tree-children ${expandedNodes.has(nodeId) ? '' : 'collapsed'}`;
+        
+        node.children.forEach(child => {
+            const childNode = renderDirectoryNode(child);
+            childrenContainer.appendChild(childNode);
+        });
+        
+        nodeElement.appendChild(childrenContainer);
+    }
+    
+    return nodeElement;
+}
+
+function renderDateTree() {
+    const container = document.getElementById('tree-container');
+    const title = document.getElementById('tree-title');
+    
+    title.textContent = 'Date Tree';
+    container.innerHTML = '';
+    container.className = 'date-tree';
+    
+    // Add "All Dates" option
+    const allItem = createTreeNode({
+        id: 'all-dates',
+        label: 'All Dates',
+        icon: 'bi-calendar-fill',
+        isRoot: true
+    });
+    allItem.addEventListener('click', () => selectFilter('date', null));
+    container.appendChild(allItem);
+    
+    // Render date tree nodes
+    if (dateTree && dateTree.length > 0) {
+        dateTree.forEach(yearNode => {
+            const treeNode = renderDateNode(yearNode);
+            container.appendChild(treeNode);
+        });
+    }
+}
+
+function renderDateNode(node) {
+    const nodeId = `date-${node.type}-${node.value}`;
+    const hasChildren = node.children && node.children.length > 0;
+    
+    let icon = 'bi-calendar';
+    if (node.type === 'year') icon = 'bi-calendar3';
+    else if (node.type === 'month') icon = 'bi-calendar2-month';
+    else if (node.type === 'day') icon = 'bi-calendar-day';
+    
+    const nodeElement = createTreeNode({
+        id: nodeId,
+        label: node.label,
+        count: node.file_count,
+        icon: icon,
+        hasChildren: hasChildren,
+        isExpanded: expandedNodes.has(nodeId)
+    });
+    
+    // Add click handler for selection
+    nodeElement.querySelector('.tree-label').addEventListener('click', () => {
+        selectDateFilter(node);
+    });
+    
+    // Add children if they exist
+    if (hasChildren) {
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = `tree-children ${expandedNodes.has(nodeId) ? '' : 'collapsed'}`;
+        
+        node.children.forEach(child => {
+            const childNode = renderDateNode(child);
+            childrenContainer.appendChild(childNode);
+        });
+        
+        nodeElement.appendChild(childrenContainer);
+    }
+    
+    return nodeElement;
+}
+
+function createTreeNode({ id, label, count, icon, hasChildren = false, isExpanded = false, isRoot = false }) {
+    const nodeElement = document.createElement('div');
+    nodeElement.className = 'tree-node d-flex align-items-center';
+    nodeElement.setAttribute('data-node-id', id);
+    
+    let html = '';
+    
+    // Add toggle button for nodes with children
+    if (hasChildren) {
+        html += `
+            <span class="tree-toggle ${isExpanded ? '' : 'collapsed'}">
+                <i class="bi bi-chevron-down"></i>
+            </span>
+        `;
+    } else {
+        html += '<span class="tree-toggle" style="visibility: hidden;"></span>';
+    }
+    
+    // Add icon
+    html += `<i class="bi ${icon} tree-icon ${isRoot ? 'text-primary' : 'text-muted'}"></i>`;
+    
+    // Add label
+    html += `<span class="tree-label">${label}</span>`;
+    
+    // Add count badge
+    if (count !== undefined) {
+        html += `<span class="badge bg-secondary tree-badge">${count}</span>`;
+    }
+    
+    nodeElement.innerHTML = html;
+    
+    // Add toggle functionality
+    if (hasChildren) {
+        const toggle = nodeElement.querySelector('.tree-toggle');
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleNode(nodeElement);
+        });
+    }
+    
+    return nodeElement;
+}
+
+function toggleNode(nodeElement) {
+    const nodeId = nodeElement.getAttribute('data-node-id');
+    const childrenContainer = nodeElement.querySelector('.tree-children');
+    const toggle = nodeElement.querySelector('.tree-toggle');
+    
+    if (!childrenContainer) return;
+    
+    const isExpanded = !childrenContainer.classList.contains('collapsed');
+    
+    if (isExpanded) {
+        // Collapse
+        childrenContainer.classList.add('collapsed');
+        toggle.classList.add('collapsed');
+        expandedNodes.delete(nodeId);
+    } else {
+        // Expand
+        childrenContainer.classList.remove('collapsed');
+        toggle.classList.remove('collapsed');
+        expandedNodes.add(nodeId);
+    }
+}
+
+function toggleAllNodes() {
+    const button = document.getElementById('expand-all');
+    const icon = button.querySelector('i');
+    const allNodes = document.querySelectorAll('.tree-node');
+    
+    const shouldExpand = icon.classList.contains('bi-plus-square');
+    
+    allNodes.forEach(node => {
+        const nodeId = node.getAttribute('data-node-id');
+        const childrenContainer = node.querySelector('.tree-children');
+        const toggle = node.querySelector('.tree-toggle');
+        
+        if (childrenContainer) {
+            if (shouldExpand) {
+                childrenContainer.classList.remove('collapsed');
+                toggle.classList.remove('collapsed');
+                expandedNodes.add(nodeId);
+            } else {
+                childrenContainer.classList.add('collapsed');
+                toggle.classList.add('collapsed');
+                expandedNodes.delete(nodeId);
+            }
+        }
+    });
+    
+    // Update button icon
+    if (shouldExpand) {
+        icon.className = 'bi bi-dash-square';
+        button.title = 'Collapse All';
+    } else {
+        icon.className = 'bi bi-plus-square';
+        button.title = 'Expand All';
+    }
+}
+
+function selectFilter(type, value) {
+    if (type === 'directory') {
+        currentFilters.directory = value;
+        updateBreadcrumb(value);
+    }
+    
+    // Update active state
+    document.querySelectorAll('.tree-node').forEach(node => {
+        node.classList.remove('active');
+    });
+    
+    // Find and activate the selected node
+    const activeNode = document.querySelector(`[data-node-id="${type === 'directory' ? (value ? `dir-${value.replace(/[^a-zA-Z0-9]/g, '_')}` : 'all-dirs') : 'all-dates'}"]`);
+    if (activeNode) {
+        activeNode.classList.add('active');
+    }
+    
+    applyFilters();
+}
+
+function selectDateFilter(node) {
+    // Clear other date filters first
+    delete currentFilters.year;
+    delete currentFilters.month;
+    delete currentFilters.day;
+    delete currentFilters.date_from;
+    delete currentFilters.date_to;
+    
+    // Set appropriate filter based on node type
+    if (node.type === 'year') {
+        currentFilters.year = node.value;
+    } else if (node.type === 'month') {
+        // Get year from parent
+        const year = findParentNode(node, 'year')?.value;
+        if (year) {
+            currentFilters.year = year;
+            currentFilters.month = node.value;
+        }
+    } else if (node.type === 'day') {
+        // Get year and month from parents
+        const year = findParentNode(node, 'year')?.value;
+        const month = findParentNode(node, 'month')?.value;
+        if (year && month) {
+            currentFilters.year = year;
+            currentFilters.month = month;
+            currentFilters.day = node.value;
+        }
+    }
+    
+    // Update active state
+    document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active'));
+    const activeNode = document.querySelector(`[data-node-id="date-${node.type}-${node.value}"]`);
+    if (activeNode) {
+        activeNode.classList.add('active');
+    }
+    
+    applyFilters();
+}
+
+function findParentNode(node, type) {
+    let current = node.parent;
+    while (current) {
+        if (current.type === type) {
+            return current;
+        }
+        current = current.parent;
+    }
+    return null;
+}
+
+function updateBreadcrumb(path) {
+    const breadcrumb = document.getElementById('breadcrumb-nav');
+    const ol = breadcrumb.querySelector('ol');
+    ol.innerHTML = '';
+    
+    if (!path) {
+        breadcrumb.style.display = 'none';
+        return;
+    }
+    
+    breadcrumb.style.display = 'block';
+    
+    // Add home breadcrumb
+    const homeItem = document.createElement('li');
+    homeItem.className = 'breadcrumb-item';
+    homeItem.innerHTML = '<a href="#" onclick="selectDirectory(\'\');">All Directories</a>';
+    ol.appendChild(homeItem);
+    
+    // Add current directory
+    const currentItem = document.createElement('li');
+    currentItem.className = 'breadcrumb-item active';
+    currentItem.setAttribute('aria-current', 'page');
+    const dirName = path.split('/').pop() || path;
+    currentItem.textContent = dirName;
+    ol.appendChild(currentItem);
+}
+
+function toggleTreeView() {
+    const sidebar = document.getElementById('tree-sidebar');
+    const mainContent = document.getElementById('main-content');
+    const photosContainer = document.getElementById('photos-container');
+    const groupsContainer = document.getElementById('directory-groups-container');
+    
+    if (currentViewType === 'directory' || currentViewType === 'date') {
+        sidebar.style.display = 'block';
+        mainContent.className = 'col-md-9';
+        photosContainer.style.display = 'none';
+        groupsContainer.style.display = 'block';
+        
+        // Render appropriate tree
+        renderCurrentTree();
+        // Load hierarchical content for the main area
+        loadHierarchicalPhotos();
+    } else {
+        sidebar.style.display = 'none';
+        mainContent.className = 'col';
+        photosContainer.style.display = 'block';
+        groupsContainer.style.display = 'none';
+    }
+}
+
+// Load photos for hierarchical views
+function loadHierarchicalPhotos() {
+    const container = document.getElementById('directory-groups-container');
+    container.innerHTML = '';
+    
+    if (currentViewType === 'directory') {
+        renderHierarchicalDirectoryView();
+    } else if (currentViewType === 'date') {
+        renderHierarchicalDateView();
+    }
+}
+
+function renderHierarchicalDirectoryView() {
+    if (!directoryTree || directoryTree.length === 0) {
+        document.getElementById('directory-groups-container').innerHTML = '<p class="text-muted text-center">No directories found.</p>';
+        return;
+    }
+    
+    const container = document.getElementById('directory-groups-container');
+    directoryTree.forEach(node => {
+        const dirSection = createHierarchicalDirectorySection(node);
+        container.appendChild(dirSection);
+    });
+}
+
+function renderHierarchicalDateView() {
+    if (!dateTree || dateTree.length === 0) {
+        document.getElementById('directory-groups-container').innerHTML = '<p class="text-muted text-center">No dates found.</p>';
+        return;
+    }
+    
+    const container = document.getElementById('directory-groups-container');
+    dateTree.forEach(yearNode => {
+        const yearSection = createHierarchicalDateSection(yearNode);
+        container.appendChild(yearSection);
+    });
+}
+
+function createHierarchicalDirectorySection(node, level = 0) {
+    const section = document.createElement('div');
+    section.className = 'hierarchical-section mb-3';
+    section.style.marginLeft = `${level * 20}px`;
+    
+    // Directory header
+    const header = document.createElement('div');
+    header.className = 'd-flex align-items-center justify-content-between border-bottom pb-2 mb-3';
+    header.innerHTML = `
+        <div class="d-flex align-items-center">
+            <span class="hierarchy-toggle me-2" style="cursor: pointer; ${node.children && node.children.length > 0 ? '' : 'visibility: hidden;'}">
+                <i class="bi bi-chevron-right"></i>
+            </span>
+            <i class="bi bi-folder text-primary me-2"></i>
+            <h${5 + level} class="mb-0 hierarchy-title">${node.name}</h${5 + level}>
+            <span class="badge bg-secondary ms-2">${node.file_count} files</span>
+        </div>
+        <button class="btn btn-sm btn-outline-primary hierarchy-load" data-path="${node.path}">
+            Load Photos
+        </button>
+    `;
+    
+    const toggle = header.querySelector('.hierarchy-toggle');
+    const photosContainer = document.createElement('div');
+    photosContainer.className = 'hierarchy-photos row row-cols-1 row-cols-md-3 row-cols-lg-4 row-cols-xl-6 g-3 mb-3';
+    photosContainer.style.display = 'none';
+    
+    const childrenContainer = document.createElement('div');
+    childrenContainer.className = 'hierarchy-children';
+    childrenContainer.style.display = 'none';
+    
+    // Toggle functionality
+    toggle.addEventListener('click', () => {
+        const isExpanded = !photosContainer.style.display || photosContainer.style.display === 'none';
+        const icon = toggle.querySelector('i');
+        
+        if (isExpanded) {
+            photosContainer.style.display = 'block';
+            childrenContainer.style.display = 'block';
+            icon.className = 'bi bi-chevron-down';
+        } else {
+            photosContainer.style.display = 'none';
+            childrenContainer.style.display = 'none';
+            icon.className = 'bi bi-chevron-right';
+        }
+    });
+    
+    // Load photos button
+    const loadButton = header.querySelector('.hierarchy-load');
+    loadButton.addEventListener('click', () => {
+        loadPhotosForPath(node.path, photosContainer);
+    });
+    
+    section.appendChild(header);
+    section.appendChild(photosContainer);
+    
+    // Add children
+    if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+            const childSection = createHierarchicalDirectorySection(child, level + 1);
+            childrenContainer.appendChild(childSection);
+        });
+    }
+    
+    section.appendChild(childrenContainer);
+    return section;
+}
+
+function createHierarchicalDateSection(node, level = 0) {
+    const section = document.createElement('div');
+    section.className = 'hierarchical-section mb-3';
+    section.style.marginLeft = `${level * 20}px`;
+    
+    // Date header
+    const header = document.createElement('div');
+    header.className = 'd-flex align-items-center justify-content-between border-bottom pb-2 mb-3';
+    
+    let icon = 'bi-calendar';
+    if (node.type === 'year') icon = 'bi-calendar3';
+    else if (node.type === 'month') icon = 'bi-calendar2-month';
+    else if (node.type === 'day') icon = 'bi-calendar-day';
+    
+    header.innerHTML = `
+        <div class="d-flex align-items-center">
+            <span class="hierarchy-toggle me-2" style="cursor: pointer; ${node.children && node.children.length > 0 ? '' : 'visibility: hidden;'}">
+                <i class="bi bi-chevron-right"></i>
+            </span>
+            <i class="bi ${icon} text-info me-2"></i>
+            <h${5 + level} class="mb-0 hierarchy-title">${node.label}</h${5 + level}>
+            <span class="badge bg-secondary ms-2">${node.file_count} files</span>
+        </div>
+        <button class="btn btn-sm btn-outline-primary hierarchy-load" data-type="${node.type}" data-value="${node.value}">
+            Load Photos
+        </button>
+    `;
+    
+    const toggle = header.querySelector('.hierarchy-toggle');
+    const photosContainer = document.createElement('div');
+    photosContainer.className = 'hierarchy-photos row row-cols-1 row-cols-md-3 row-cols-lg-4 row-cols-xl-6 g-3 mb-3';
+    photosContainer.style.display = 'none';
+    
+    const childrenContainer = document.createElement('div');
+    childrenContainer.className = 'hierarchy-children';
+    childrenContainer.style.display = 'none';
+    
+    // Toggle functionality
+    toggle.addEventListener('click', () => {
+        const isExpanded = !photosContainer.style.display || photosContainer.style.display === 'none';
+        const icon = toggle.querySelector('i');
+        
+        if (isExpanded) {
+            photosContainer.style.display = 'block';
+            childrenContainer.style.display = 'block';
+            icon.className = 'bi bi-chevron-down';
+        } else {
+            photosContainer.style.display = 'none';
+            childrenContainer.style.display = 'none';
+            icon.className = 'bi bi-chevron-right';
+        }
+    });
+    
+    // Load photos button
+    const loadButton = header.querySelector('.hierarchy-load');
+    loadButton.addEventListener('click', () => {
+        loadPhotosForDate(node, photosContainer);
+    });
+    
+    section.appendChild(header);
+    section.appendChild(photosContainer);
+    
+    // Add children
+    if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+            const childSection = createHierarchicalDateSection(child, level + 1);
+            childrenContainer.appendChild(childSection);
+        });
+    }
+    
+    section.appendChild(childrenContainer);
+    return section;
+}
+
+function loadPhotosForPath(path, container) {
+    const params = new URLSearchParams({
+        limit: 50,
+        offset: 0,
+        directory: path,
+        order_by: 'path'
+    });
+    
+    fetch(`/api/files?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            container.innerHTML = '';
+            data.files.forEach(file => {
+                container.appendChild(createThumbnailCard(file));
+            });
+        })
+        .catch(error => {
+            console.error('Error loading photos for path:', error);
+            container.innerHTML = '<p class="text-danger">Failed to load photos</p>';
+        });
+}
+
+function loadPhotosForDate(node, container) {
+    const params = new URLSearchParams({
+        limit: 50,
+        offset: 0,
+        order_by: 'exif_date'
+    });
+    
+    if (node.type === 'year') {
+        params.append('year', node.value);
+    } else if (node.type === 'month') {
+        // Need to get year from parent - for now just use the value
+        params.append('year', Math.floor(node.value / 100));
+        params.append('month', node.value % 100);
+    } else if (node.type === 'day') {
+        // Need to parse the full date - for now simplified
+        const date = new Date(node.value);
+        params.append('year', date.getFullYear());
+        params.append('month', date.getMonth() + 1);
+        params.append('day', date.getDate());
+    }
+    
+    fetch(`/api/files?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            container.innerHTML = '';
+            data.files.forEach(file => {
+                container.appendChild(createThumbnailCard(file));
+            });
+        })
+        .catch(error => {
+            console.error('Error loading photos for date:', error);
+            container.innerHTML = '<p class="text-danger">Failed to load photos</p>';
+        });
+}
+
+function loadPhotos(append = false) {
+    if (loading) return;
+    loading = true;
+    
+    const loadingEl = document.getElementById('loading');
+    loadingEl.classList.remove('d-none');
+    
+    if (!append) {
+        currentOffset = 0;
+        hasMore = true;
+    }
+    
+    const params = new URLSearchParams({
+        limit: 50,
+        offset: currentOffset,
+        ...currentFilters
+    });
+    
+    // For flat view only - hierarchical views use different loading
+    if (currentViewType !== 'flat') {
+        loading = false;
+        loadingEl.classList.add('d-none');
+        return;
+    }
+    
+    fetch(`/api/files?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            renderFlatPhotos(data, append);
+        })
+        .catch(error => {
+            console.error('Error loading photos:', error);
+            alert('Failed to load photos');
+        })
+        .finally(() => {
+            loading = false;
+            loadingEl.classList.add('d-none');
+        });
+}
+
+
+function renderFlatPhotos(data, append) {
+    const container = document.getElementById('photos-container');
+    
+    if (!append) {
+        container.innerHTML = '';
+    }
+    
+    const viewMode = document.querySelector('input[name="viewMode"]:checked')?.id || 'thumbnails';
+    
+    data.files.forEach(file => {
+        if (viewMode === 'thumbnails') {
+            container.appendChild(createThumbnailCard(file));
+        } else {
+            container.appendChild(createDetailItem(file));
+        }
+    });
+    
+    currentOffset += data.files.length;
+    hasMore = data.has_more;
+}
+
+function refreshView() {
+    // Re-render the current photos with the new view mode
+    loadPhotos(false);
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>
+{{end}}

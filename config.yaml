@@ -1,0 +1,4 @@
+database_path: "photos.db"
+thumbnail_dir: "thumbnails"
+thumbnail_size: 300
+web_port: "8080"

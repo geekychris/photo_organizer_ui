@@ -1,0 +1,422 @@
+/* Custom styles for Photo Database */
+
+.photo-card {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.photo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.photo-thumbnail {
+    border-radius: 0.375rem 0.375rem 0 0;
+    background-color: #f8f9fa;
+}
+
+.photo-thumbnail-small {
+    border-radius: 0.25rem;
+    background-color: #f8f9fa;
+}
+
+.photo-item {
+    cursor: pointer;
+}
+
+.photo-item:hover {
+    background-color: var(--bs-light);
+}
+
+/* Loading spinner */
+.spinner-border {
+    color: var(--bs-primary);
+}
+
+/* File size badges */
+.badge {
+    font-size: 0.75em;
+}
+
+/* Modal improvements */
+.modal-xl {
+    max-width: 90%;
+}
+
+.modal img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.375rem;
+}
+
+/* Thumbnail grid responsiveness */
+@media (max-width: 576px) {
+    .row-cols-1 > * {
+        max-width: 100%;
+    }
+}
+
+@media (min-width: 768px) {
+    .row-cols-md-2 > * {
+        max-width: 50%;
+    }
+}
+
+@media (min-width: 992px) {
+    .row-cols-lg-4 > * {
+        max-width: 25%;
+    }
+}
+
+@media (min-width: 1200px) {
+    .row-cols-xl-6 > * {
+        max-width: 16.666667%;
+    }
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Table improvements */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: var(--bs-dark);
+}
+
+.table-hover tbody tr:hover td {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Card improvements */
+.card {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+    background-color: rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Button improvements */
+.btn-group .btn {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Alert improvements */
+.alert {
+    border: none;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--bs-success);
+}
+
+.alert-info {
+    border-left-color: var(--bs-info);
+}
+
+.alert-warning {
+    border-left-color: var(--bs-warning);
+}
+
+.alert-danger {
+    border-left-color: var(--bs-danger);
+}
+
+/* Form improvements */
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Navigation improvements */
+.navbar-brand {
+    font-weight: 600;
+}
+
+.nav-link.active {
+    font-weight: 500;
+}
+
+/* Statistics cards */
+.fs-1 {
+    font-size: 2.5rem !important;
+}
+
+/* Code blocks */
+code {
+    font-size: 0.875em;
+    color: var(--bs-dark);
+    background-color: var(--bs-light);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+}
+
+/* Utility classes */
+.text-break {
+    word-break: break-all !important;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Tree view styles */
+.tree-node {
+    user-select: none;
+    cursor: pointer;
+    padding: 0.25rem 0;
+    line-height: 1.4;
+}
+
+.tree-node:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 0.25rem;
+}
+
+.tree-node.active {
+    background-color: var(--bs-primary);
+    color: white;
+    border-radius: 0.25rem;
+}
+
+.tree-node.active:hover {
+    background-color: var(--bs-primary);
+}
+
+.tree-toggle {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-right: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.tree-toggle:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.tree-toggle.collapsed {
+    transform: rotate(-90deg);
+}
+
+.tree-children {
+    margin-left: 1rem;
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    padding-left: 0.5rem;
+}
+
+.tree-children.collapsed {
+    display: none;
+}
+
+.tree-icon {
+    margin-right: 0.375rem;
+    width: 16px;
+    text-align: center;
+}
+
+.tree-label {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.tree-badge {
+    font-size: 0.7rem;
+    padding: 0.125rem 0.375rem;
+    margin-left: 0.5rem;
+}
+
+/* Date tree specific styles */
+.date-tree .tree-node {
+    padding: 0.125rem 0;
+}
+
+.date-tree .tree-label {
+    font-size: 0.85rem;
+}
+
+/* Directory tree specific styles */
+.directory-tree .tree-node {
+    padding: 0.25rem 0;
+}
+
+/* Hierarchical photo sections */
+.hierarchical-section {
+    border-left: 2px solid rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.hierarchical-section::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, var(--bs-primary), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.hierarchical-section:hover::before {
+    opacity: 1;
+}
+
+.hierarchy-toggle {
+    transition: transform 0.2s ease;
+    color: var(--bs-secondary);
+}
+
+.hierarchy-toggle:hover {
+    color: var(--bs-primary);
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    border-radius: 50%;
+}
+
+.hierarchy-title {
+    font-weight: 500;
+    margin-bottom: 0;
+    color: var(--bs-dark);
+}
+
+.hierarchy-load {
+    transition: all 0.2s ease;
+}
+
+.hierarchy-load:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.hierarchy-photos {
+    background-color: rgba(0, 0, 0, 0.01);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.hierarchy-children {
+    transition: all 0.3s ease;
+}
+
+/* Loading state for hierarchy sections */
+.hierarchical-section .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+    color: var(--bs-secondary);
+}
+
+/* Modal image enhancements */
+.modal-xl {
+    max-width: 95vw;
+}
+
+#photoModalImage {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+#photoModalImage:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2) !important;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Image loading states */
+.image-loading {
+    background: linear-gradient(90deg, #f0f0f0 25%, transparent 37%, #f0f0f0 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Button improvements in modal */
+#viewOriginalBtn:hover,
+#downloadBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Tooltip-like styling for click hint */
+.modal-body .text-center small {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.375rem 0.75rem;
+    border-radius: 1rem;
+    display: inline-block;
+    margin-top: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.modal-body .text-center small:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    color: var(--bs-primary);
+}
+
+/* Responsive text */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    .fs-1 {
+        font-size: 2rem !important;
+    }
+    
+    .btn {
+        font-size: 0.875rem;
+    }
+    
+    .tree-container {
+        max-height: 400px;
+    }
+    
+    .tree-label {
+        font-size: 0.8rem;
+    }
+    
+    .hierarchical-section {
+        margin-left: 0 !important;
+        border-left: none;
+    }
+    
+    .hierarchy-photos {
+        padding: 0.5rem;
+    }
+}

@@ -1,0 +1,195 @@
+{{define "title"}}Dashboard - Photo Database{{end}}
+
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <h1>Photo Database Dashboard</h1>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-folder2 fs-1 text-primary"></i>
+                <h4 class="card-title mt-2">{{.Stats.TotalDirectories}}</h4>
+                <p class="card-text">Directories</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-image fs-1 text-success"></i>
+                <h4 class="card-title mt-2">{{.Stats.TotalFiles}}</h4>
+                <p class="card-text">Photo Files</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-hdd fs-1 text-info"></i>
+                    <h4 class="card-title mt-2" data-bytes="{{.Stats.TotalSize}}">{{.Stats.TotalSize}}</h4>
+                <p class="card-text">Total Size</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-files fs-1 text-warning"></i>
+                <h4 class="card-title mt-2">{{.Stats.DuplicateFiles}}</h4>
+                <p class="card-text">Duplicate Files</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="scanDirectory()">
+                        <i class="bi bi-search"></i> Scan Directory
+                    </button>
+                    <button class="btn btn-secondary" onclick="rescanAll()">
+                        <i class="bi bi-arrow-clockwise"></i> Rescan All
+                    </button>
+                    <a href="/browse" class="btn btn-success">
+                        <i class="bi bi-images"></i> Browse Photos
+                    </a>
+                    <a href="/duplicates" class="btn btn-warning">
+                        <i class="bi bi-files"></i> View Duplicates
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div id="activity-log">
+                    <p class="text-muted">No recent activity</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Directory Modal -->
+<div class="modal fade" id="scanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Scan Directory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="directoryPath" class="form-label">Directory Path</label>
+                    <input type="text" class="form-control" id="directoryPath" placeholder="/path/to/photos">
+                    <div class="form-text">Enter the full path to the directory containing photos</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="startScan()">Start Scan</button>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function scanDirectory() {
+    const modal = new bootstrap.Modal(document.getElementById('scanModal'));
+    modal.show();
+}
+
+function startScan() {
+    const path = document.getElementById('directoryPath').value;
+    if (!path.trim()) {
+        alert('Please enter a directory path');
+        return;
+    }
+
+    fetch('/api/scan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ directory: path })
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('scanModal')).hide();
+        addActivity('Scan started for: ' + path);
+        alert('Scan started for: ' + path);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to start scan');
+    });
+}
+
+function rescanAll() {
+    if (confirm('This will rescan all managed directories. Continue?')) {
+        fetch('/api/rescan', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            addActivity('Rescan of all directories started');
+            alert('Rescan started');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to start rescan');
+        });
+    }
+}
+
+function addActivity(message) {
+    const log = document.getElementById('activity-log');
+    const now = new Date().toLocaleString();
+    const item = document.createElement('div');
+    item.className = 'alert alert-info py-2';
+    item.innerHTML = `<small>${now}</small><br>${message}`;
+    
+    if (log.firstChild && log.firstChild.classList.contains('text-muted')) {
+        log.innerHTML = '';
+    }
+    
+    log.insertBefore(item, log.firstChild);
+    
+    // Keep only the last 5 activities
+    while (log.children.length > 5) {
+        log.removeChild(log.lastChild);
+    }
+}
+
+// Template helper function - this would normally be handled server-side
+document.addEventListener('DOMContentLoaded', function() {
+    // Replace formatBytes template calls with actual formatting
+    document.querySelectorAll('[data-bytes]').forEach(function(el) {
+        const bytes = parseInt(el.dataset.bytes);
+        el.textContent = formatBytes(bytes);
+    });
+});
+</script>
+{{end}}

@@ -1,0 +1,171 @@
+{{define "title"}}Directories - Photo Database{{end}}
+
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <h1>Managed Directories</h1>
+        <p class="text-muted">Directories that are being monitored for photo files</p>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="mb-0">Directory List</h5>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" onclick="scanDirectory()">
+                            <i class="bi bi-plus"></i> Add Directory
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {{if .Directories}}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Directory Path</th>
+                                <th>Files</th>
+                                <th>Last Scanned</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .Directories}}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-folder text-primary me-2"></i>
+                                    <strong>{{.Name}}</strong>
+                                    <br>
+                                    <small class="text-muted">{{.Path}}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{.FileCount}}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{.LastScanned.Format "2006-01-02 15:04:05"}}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="rescanDirectory('{{.Path}}')">
+                                            <i class="bi bi-arrow-clockwise"></i> Rescan
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info" onclick="browseDirectory('{{.Path}}')">
+                                            <i class="bi bi-images"></i> Browse
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{else}}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>No directories configured.</strong> 
+                    Add a directory to start scanning for photos.
+                </div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Directory Modal -->
+<div class="modal fade" id="scanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Directory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="directoryPath" class="form-label">Directory Path</label>
+                    <input type="text" class="form-control" id="directoryPath" placeholder="/path/to/photos">
+                    <div class="form-text">Enter the full path to the directory containing photos</div>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Note:</strong> Scanning large directories may take some time. 
+                    The scan will run in the background.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="startScan()">Start Scan</button>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+function scanDirectory() {
+    const modal = new bootstrap.Modal(document.getElementById('scanModal'));
+    modal.show();
+}
+
+function startScan() {
+    const path = document.getElementById('directoryPath').value;
+    if (!path.trim()) {
+        alert('Please enter a directory path');
+        return;
+    }
+
+    fetch('/api/scan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ directory: path })
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('scanModal')).hide();
+        alert('Scan started for: ' + path + '\n\nThe page will refresh when complete.');
+        
+        // Optionally refresh the page after a delay
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to start scan: ' + error.message);
+    });
+}
+
+function rescanDirectory(path) {
+    if (confirm('Rescan directory: ' + path + '?')) {
+        fetch('/api/scan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ directory: path })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('Rescan started for: ' + path);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to start rescan: ' + error.message);
+        });
+    }
+}
+
+function browseDirectory(path) {
+    // Navigate to browse page with directory filter
+    window.location.href = '/browse?directory=' + encodeURIComponent(path);
+}
+</script>
+{{end}}

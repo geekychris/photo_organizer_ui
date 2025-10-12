@@ -1,0 +1,265 @@
+{{define "title"}}Duplicates - Photo Database{{end}}
+
+{{define "content"}}
+<div class="row">
+    <div class="col-12">
+        <h1>Duplicate Files</h1>
+        <p class="text-muted">Files with identical content based on SHA256 hash comparison</p>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div id="loading" class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading duplicates...</span>
+            </div>
+        </div>
+        <div id="duplicates-container" class="d-none">
+            <!-- Duplicates will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Duplicate Files Modal -->
+<div class="modal fade" id="duplicateModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="duplicateModalTitle">Duplicate Files</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="duplicateModalContent">
+                    <!-- Duplicate file list will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadDuplicates();
+});
+
+function loadDuplicates() {
+    fetch('/api/duplicates')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('duplicates-container');
+            container.innerHTML = '';
+            
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i>
+                        <strong>Great!</strong> No duplicate files found in your collection.
+                    </div>
+                `;
+            } else {
+                data.forEach(duplicate => {
+                    const card = createDuplicateCard(duplicate);
+                    container.appendChild(card);
+                });
+            }
+            
+            document.getElementById('loading').classList.add('d-none');
+            container.classList.remove('d-none');
+        })
+        .catch(error => {
+            console.error('Error loading duplicates:', error);
+            document.getElementById('loading').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Failed to load duplicates: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function createDuplicateCard(duplicate) {
+    const card = document.createElement('div');
+    card.className = 'card mb-3';
+    
+    const totalSizeFormatted = formatBytes(duplicate.total_size);
+    const avgSizeFormatted = formatBytes(duplicate.total_size / duplicate.count);
+    
+    card.innerHTML = `
+        <div class="card-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h6 class="mb-0">
+                        <i class="bi bi-files text-warning"></i>
+                        ${duplicate.count} duplicate files
+                    </h6>
+                    <small class="text-muted">
+                        Total size: ${totalSizeFormatted} • Average size: ${avgSizeFormatted}
+                    </small>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-outline-primary btn-sm" onclick="showDuplicateFiles('${duplicate.hash}')">
+                        <i class="bi bi-eye"></i> View Files
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <small class="text-muted">File Hash:</small><br>
+                    <code class="small">${duplicate.hash}</code>
+                </div>
+                <div class="col-md-6">
+                    <small class="text-muted">Potential Space Savings:</small><br>
+                    <span class="text-success fw-bold">${formatBytes(duplicate.total_size - (duplicate.total_size / duplicate.count))}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+function showDuplicateFiles(hash) {
+    document.getElementById('duplicateModalTitle').textContent = 'Duplicate Files';
+    const content = document.getElementById('duplicateModalContent');
+    content.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading files...</span>
+            </div>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('duplicateModal'));
+    modal.show();
+    
+    fetch(`/api/duplicates/${hash}`)
+        .then(response => response.json())
+        .then(files => {
+            content.innerHTML = '';
+            
+            if (files.length === 0) {
+                content.innerHTML = '<p class="text-muted">No files found.</p>';
+                return;
+            }
+            
+            // Group files by directory for better organization
+            const groupedFiles = {};
+            files.forEach(file => {
+                const dirPath = file.relative_path.substring(0, file.relative_path.lastIndexOf('/') || 0) || 'Root';
+                if (!groupedFiles[dirPath]) {
+                    groupedFiles[dirPath] = [];
+                }
+                groupedFiles[dirPath].push(file);
+            });
+            
+            Object.keys(groupedFiles).sort().forEach(dirPath => {
+                const section = document.createElement('div');
+                section.className = 'mb-4';
+                
+                const dirFiles = groupedFiles[dirPath];
+                section.innerHTML = `
+                    <h6 class="text-primary">
+                        <i class="bi bi-folder"></i> ${dirPath}
+                        <span class="badge bg-secondary ms-2">${dirFiles.length} file${dirFiles.length !== 1 ? 's' : ''}</span>
+                    </h6>
+                    <div class="list-group">
+                        ${dirFiles.map(file => `
+                            <div class="list-group-item">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="photo-thumbnail-small position-relative" style="width: 50px; height: 50px; overflow: hidden; border-radius: 0.25rem;">
+                                            <img src="/thumbnail/${file.id}" alt="${file.filename}" 
+                                                 class="w-100 h-100" style="object-fit: cover;" 
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="d-flex align-items-center justify-content-center h-100 text-muted bg-light position-absolute top-0 start-0 w-100" style="display: none !important;">
+                                                <i class="bi bi-image"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1">${file.filename}</h6>
+                                        <p class="mb-1 text-muted small">${file.absolute_path}</p>
+                                        <small class="text-muted">
+                                            ${formatBytes(file.file_size)} • ${file.width}×${file.height}
+                                            ${file.exif_date_time ? ` • ${new Date(file.exif_date_time).toLocaleDateString()}` : 
+                                              ` • ${new Date(file.modified_at).toLocaleDateString()}`}
+                                        </small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete(${file.id}, '${file.filename}')" title="Delete this copy">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="showInFolder('${file.absolute_path}')" title="Show in folder">
+                                            <i class="bi bi-folder-symlink"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                content.appendChild(section);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading duplicate files:', error);
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Failed to load files: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function confirmDelete(fileId, filename) {
+    if (confirm(`Are you sure you want to delete "${filename}"?\n\nThis action cannot be undone.`)) {
+        deleteFile(fileId, filename);
+    }
+}
+
+function deleteFile(fileId, filename) {
+    // This would need to be implemented in the server
+    fetch(`/api/files/${fileId}`, { method: 'DELETE' })
+        .then(response => {
+            if (response.ok) {
+                alert(`File "${filename}" deleted successfully.`);
+                // Refresh the duplicates list
+                loadDuplicates();
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('duplicateModal')).hide();
+            } else {
+                throw new Error('Delete failed');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting file:', error);
+            alert(`Failed to delete "${filename}": ${error.message}`);
+        });
+}
+
+function showInFolder(filePath) {
+    // This would open the file in the system file browser
+    // For now, just copy path to clipboard
+    navigator.clipboard.writeText(filePath).then(() => {
+        alert('File path copied to clipboard: ' + filePath);
+    }).catch(() => {
+        alert('File path: ' + filePath);
+    });
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>
+{{end}}

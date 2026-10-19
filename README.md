@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Photo Organizer Ui logo" width="180">
+</p>
+
 # Photo Database Manager
 
 A comprehensive photo management application with a web UI for cataloging, browsing, and managing photo collections. Built in Go with SQLite database backend.
